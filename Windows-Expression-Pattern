@@ -1,0 +1,37 @@
+
+```
+import os
+import re
+
+# Set the root directory to search
+root_dir = "C:\\Windows\\"
+
+# Set the patterns to search for
+patterns = [
+    r"\bexec\b",
+    r"\beval\b",
+    r"\bsystem\b",
+    r"\bpopen\b",
+]
+
+# Compile the patterns into a list of regular expressions
+regexes = [re.compile(pattern) for pattern in patterns]
+
+# Walk through the directory tree
+for root, dirs, files in os.walk(root_dir):
+    # Check each file
+    for file in files:
+        # Open the file
+        with open(os.path.join(root, file), "r") as f:
+            # Read the contents of the file
+            contents = f.read()
+            # Check for a match with each pattern
+            for regex in regexes:
+                if regex.search(contents):
+                    print(f"Possible malicious code found in file {file}")
+                    break
+```
+
+This script will search for the patterns `exec`, `eval`, `system`, and `popen` within the `C:\Windows` directory and all of its subdirectories. If any of these patterns are found in a file, the script will print a message indicating that possible malicious code has been found.
+
+Note that this script is just a starting point, and you may want to modify it to fit your specific needs. For example, you may want to add additional patterns to search for, or modify the root directory to search.
