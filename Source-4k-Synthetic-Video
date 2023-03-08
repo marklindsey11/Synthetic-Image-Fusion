@@ -1,0 +1,148 @@
+import av
+import numpy as np
+
+# Define video parameters
+width = 3840
+height = 2160
+fps = 40
+duration = 10 # seconds
+codec = 'av1'
+
+# Initialize video container
+container = av.open('synthetic_video_dataset.mp4', mode='w')
+stream = container.add_stream(codec, rate=fps)
+stream.width = width
+stream.height = height
+
+# Generate synthetic video frames
+for frame_idx in range(fps * duration):
+    # Generate a random frame with random moving objects
+    frame = np.random.randint(0, 256, size=(height, width, 3), dtype=np.uint8)
+    
+    # Encode the frame in AV1 format
+    encoded_frame = av.VideoFrame.from_ndarray(frame, format='rgb24')
+    encoded_frame = stream.encode(encoded_frame)
+    
+    # Write the encoded frame to the container
+    container.mux(encoded_frame)
+
+# Close the video container
+container.close()
+
+import bpy
+import os
+import shutil
+
+# Define video parameters
+width = 3840
+height = 2160
+fps = 40
+duration = 10 # seconds
+
+# Set up Blender
+bpy.context.scene.render.fps = fps
+bpy.context.scene.render.resolution_x = width
+bpy.context.scene.render.resolution_y = height
+
+# Load 3D model
+bpy.ops.import_scene.obj(filepath='path/to/3d/model.obj')
+
+# Set up output folder
+output_folder = 'synthetic_video_dataset'
+if os.path.exists(output_folder):
+    shutil.rmtree(output_folder)
+os.mkdir(output_folder)
+
+# Render frames
+for frame_idx in range(fps * duration):
+    # Set current frame
+    bpy.context.scene.frame_current = frame_idx
+    
+    # Render frame
+    bpy.context.scene.render.filepath = os.path.join(output_folder, f'frame_{frame_idx:05d}.png')
+    bpy.ops.render.render(write_still=True)
+
+import cv2
+import matplotlib.pyplot as plt
+
+# Define dataset folder paths
+train_folder = 'train_dataset'
+val_folder = 'val_dataset'
+test_folder = 'test_dataset'
+
+# Define OpenStreetMap image path
+osm_path = 'osm_map.png'
+
+# Define window positions and sizes (x, y, width, height)
+windows = [
+    (100, 100, 200, 200),
+    (300, 100, 200, 200),
+    (500, 100, 200, 200),
+    (700, 100, 200, 200),
+    (900, 100, 200, 200),
+]
+
+# Define viewpoint positions (lat, lon, altitude)
+viewpoints = [
+    (42.3601, -71.0589, 1000),
+    (42.3601, -71.0589, 2000),
+    (42.3601, -71.0589, 5000),
+    (42.3601, -71.0589, 10000),
+    (42.3601, -71.0589, 20000),
+]
+
+# Load OpenStreetMap image
+osm_image = cv2.imread(osm_path)
+
+# Define function to display dataset frames and OSM map
+
+import subprocess
+
+# Define input and output file paths
+input_file = 'synthetic_video_dataset.av1'
+output_file = 'synthetic_video_dataset.mp4'
+
+# Define FFmpeg command
+ffmpeg_command = ['ffmpeg', '-i', input_file, '-c:v', 'libx264', '-crf', '23', '-preset', 'medium', '-c:a', 'copy', output_file]
+
+# Run FFmpeg command
+subprocess.run(ffmpeg_command)
+
+# Remove input file
+os.remove(input_file)
+
+def display_dataset(dataset_folder):
+    for window_idx, window in enumerate(windows):
+        for viewpoint_idx, viewpoint in enumerate(viewpoints):
+            # Load frame image
+            frame_path = f'{dataset_folder}/frame_{window_idx:02d}_{viewpoint_idx:02d}.png'
+            frame_image = cv2.imread(frame_path)
+            
+            # Resize frame image to fit window size
+            frame_image = cv2.resize(frame_image, (window[2], window[3]))
+            
+            # Calculate window position in OSM map
+            osm_window = (window[0], osm_image.shape[0] - (window[1] + window[3]), window[2], window[3])
+            
+            # Draw window outline on OSM map
+            cv2.rectangle(osm_image, (osm_window[0], osm_window[1]), (osm_window[0] + osm_window[2], osm_window[1] + osm_window[3]), (0, 0, 255), 2)
+            
+            # Calculate frame position in OSM map
+            frame_pos = (osm_window[0] + int(osm_window[2] / 2) - int(frame_image.shape[1] / 2), osm_window[1] + int(osm_window[3] / 2) - int(frame_image.shape[0] / 2))
+            
+            # Draw frame image on OSM map
+            osm_image[frame_pos[1]:frame_pos[1]+frame_image.shape[0], frame_pos[0]:frame_pos[0]+frame_image.shape[1]] = frame_image
+        
+    # Display OSM map
+    osm_image_rgb = cv2.cvtColor(osm_image, cv2.COLOR_BGR2RGB)
+    plt.imshow(osm_image_rgb)
+    plt.show()
+
+# Display training dataset frames and OSM map
+display_dataset(train_folder)
+
+# Display validation dataset frames and OSM map
+display_dataset(val_folder)
+
+# Display testing dataset frames and OSM map
+display_dataset(test_folder)
